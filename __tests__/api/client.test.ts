@@ -1,4 +1,4 @@
-import { getUser, wkRequest, WKApiError } from "../../src/api/client";
+import { getCollectionPage, getUser, wkRequest, WKApiError } from "../../src/api/client";
 
 type FakeResponse = {
   ok: boolean;
@@ -170,6 +170,48 @@ describe("wkRequest", () => {
       await assertion;
       expect(fetchMock).toHaveBeenCalledTimes(4); // 1 original + 3 retries
     });
+  });
+});
+
+describe("full URLs (pagination)", () => {
+  it("follows a WaniKani next_url as-is", async () => {
+    fetchMock.mockResolvedValueOnce(response(200, { data: [] }));
+
+    await getCollectionPage("tok", "https://api.wanikani.com/v2/subjects?page_after_id=1000");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.wanikani.com/v2/subjects?page_after_id=1000");
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer tok");
+  });
+
+  it("prefixes a relative path with the API base URL", async () => {
+    fetchMock.mockResolvedValueOnce(response(200, { data: [] }));
+
+    await getCollectionPage("tok", "/assignments?updated_after=2026-01-01T00:00:00Z");
+
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.wanikani.com/v2/assignments?updated_after=2026-01-01T00:00:00Z");
+  });
+
+  it.each([
+    "https://evil.example.com/v2/subjects",
+    "https://api.wanikani.com.evil.example.com/v2/subjects",
+    "http://api.wanikani.com/v2/subjects",
+  ])("never sends the token to %s", async (url) => {
+    await expectApiError(getCollectionPage("tok", url), "client", undefined);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the full URL when retrying after a 429", async () => {
+    jest.useFakeTimers();
+    fetchMock
+      .mockResolvedValueOnce(response(429))
+      .mockResolvedValueOnce(response(200, { data: [] }));
+    const url = "https://api.wanikani.com/v2/subjects?page_after_id=1000";
+
+    const promise = getCollectionPage("tok", url);
+    await jest.advanceTimersByTimeAsync(5_000);
+    await promise;
+
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([url, url]);
   });
 });
 
