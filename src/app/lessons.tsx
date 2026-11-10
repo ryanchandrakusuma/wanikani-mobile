@@ -9,7 +9,7 @@ import { getDatabase } from "../db/database";
 import { completeLessons } from "../db/lessons";
 import { getTodoCounts } from "../db/queries";
 import { LessonView } from "../lessons/LessonView";
-import { lessonPages } from "../lessons/pages";
+import { lessonPages } from "../lessons/lessonTabs";
 import { loadBatch, nextBatchSize, type Batch } from "../lessons/session";
 import { QuizCard } from "../quiz/QuizCard";
 import {

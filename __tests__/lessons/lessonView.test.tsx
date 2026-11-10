@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 import { LessonView } from "../../src/lessons/LessonView";
-import { lessonPages, pageLabel } from "../../src/lessons/pages";
+import { lessonPages, pageLabel } from "../../src/lessons/lessonTabs";
 import type { LessonItem } from "../../src/db/lessons";
 import { EMPTY_STUDY, type Subject } from "../../src/subjects/model";
 

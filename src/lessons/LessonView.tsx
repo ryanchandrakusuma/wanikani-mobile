@@ -7,7 +7,7 @@ import {
   primaryMeaning, pronunciationUrl, SUBJECT_LABEL, type Reading, type Subject,
 } from "../subjects/model";
 import { radius, spacing, subjectColor, useTheme } from "../theme";
-import { lessonPages, pageLabel, type LessonPage } from "./pages";
+import { lessonPages, pageLabel, type LessonPage } from "./lessonTabs";
 
 interface Props {
   item: LessonItem;
