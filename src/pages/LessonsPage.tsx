@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { randomUUID } from "expo-crypto";
+import { Button, Centered, Message, SessionHeader } from "../components/SessionParts";
 import { getDatabase } from "../db/database";
 import { completeLessons } from "../db/lessons";
 import { getTodoCounts } from "../db/queries";
@@ -18,7 +19,7 @@ import {
 import { useSettings } from "../contexts/SettingsContext";
 import { hasReading } from "../subjects/model";
 import { useSync } from "../contexts/SyncContext";
-import { radius, spacing, useTheme } from "../theme";
+import { spacing, useTheme } from "../theme";
 import { startOfLocalDay } from "../utils/time";
 
 type Phase =
@@ -109,13 +110,7 @@ export default function Lessons() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { borderColor: theme.border }]}>
-        <Pressable onPress={close} accessibilityRole="button" accessibilityLabel="Close lessons" hitSlop={12}>
-          <Text style={{ color: theme.text, fontSize: 22 }}>✕</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">{title}</Text>
-        <View style={{ width: 22 }} />
-      </View>
+      <SessionHeader title={title} closeLabel="Close lessons" onClose={close} />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         {phase.name === "loading" && <Centered><ActivityIndicator color={theme.primary} /></Centered>}
@@ -229,62 +224,11 @@ function Learn({ phase, setPhase }: { phase: Extract<Phase, { name: "learn" }>; 
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
-  return <View style={styles.centered}>{children}</View>;
-}
-
-function Message({ title, body, children }: { title: string; body: string; children: React.ReactNode }) {
-  const theme = useTheme();
-  return (
-    <Centered>
-      <View style={styles.message}>
-        <Text style={[styles.messageTitle, { color: theme.text }]}>{title}</Text>
-        <Text style={[styles.messageBody, { color: theme.textMuted }]}>{body}</Text>
-        <View style={{ gap: spacing.sm, alignSelf: "stretch" }}>{children}</View>
-      </View>
-    </Centered>
-  );
-}
-
-function Button({ label, onPress, secondary, disabled, flex }: {
-  label: string; onPress: () => void; secondary?: boolean; disabled?: boolean; flex?: boolean;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
-      style={({ pressed }) => [
-        styles.button,
-        flex && { flex: 1 },
-        secondary
-          ? { borderWidth: 1, borderColor: theme.border }
-          : { backgroundColor: theme.primary },
-        { opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
-      ]}
-    >
-      <Text style={{ color: secondary ? theme.text : theme.onPrimary, fontWeight: "700", fontSize: 16 }}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.md, borderBottomWidth: 1,
-  },
-  title: { fontSize: 17, fontWeight: "700" },
   content: { padding: spacing.lg, width: "100%", maxWidth: 640, alignSelf: "center" },
   footer: {
     flexDirection: "row", gap: spacing.md, padding: spacing.md, borderTopWidth: 1,
     width: "100%", maxWidth: 640, alignSelf: "center",
   },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.lg },
-  message: { width: "100%", maxWidth: 480, gap: spacing.md, alignItems: "center" },
-  messageTitle: { fontSize: 22, fontWeight: "700", textAlign: "center" },
-  messageBody: { fontSize: 15, lineHeight: 22, textAlign: "center" },
-  button: { borderRadius: radius.sm, paddingVertical: 14, alignItems: "center", minHeight: 50, justifyContent: "center" },
 });
