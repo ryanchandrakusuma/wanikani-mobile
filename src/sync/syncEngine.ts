@@ -5,7 +5,7 @@ import type { Db } from "../db/types";
 
 /** Endpoints mirrored into SQLite, in sync order (small ones first). */
 export const SYNC_RESOURCES: readonly { name: SyncResource; path: string; label: string }[] = [
-  { name: "srs_systems", path: "/spaced_repetition_systems", label: "SRS stages" },
+  { name: "srs_systems", path: "/spaced_repetition_systems", label: "spaced repetition stages" },
   { name: "level_progressions", path: "/level_progressions", label: "levels" },
   { name: "study_materials", path: "/study_materials", label: "your notes" },
   { name: "subjects", path: "/subjects", label: "items" },
