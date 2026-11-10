@@ -5,7 +5,7 @@ import { WKApiError } from "../../src/api/client";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { getDatabase } from "../../src/db/database";
 import { claimForUser, upsert } from "../../src/db/repository";
-import { FOREGROUND_SYNC_INTERVAL_MS, SyncProvider, useSync } from "../../src/sync/SyncContext";
+import { FOREGROUND_SYNC_INTERVAL_MS, SyncProvider, useSync } from "../../src/contexts/SyncContext";
 import { syncAll, type SyncOptions } from "../../src/sync/syncEngine";
 import { flushOutbox } from "../../src/outbox/sender";
 import { subject } from "../helpers/fixtures";

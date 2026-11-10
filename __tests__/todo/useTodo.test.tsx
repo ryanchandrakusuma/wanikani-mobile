@@ -3,13 +3,13 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { getDatabase } from "../../src/db/database";
 import { toWkTime } from "../../src/db/queries";
 import { upsert } from "../../src/db/repository";
-import { useSync } from "../../src/sync/SyncContext";
+import { useSync } from "../../src/contexts/SyncContext";
 import { TODO_REFRESH_MS, useTodo } from "../../src/todo/useTodo";
 import { assignment, subject } from "../helpers/fixtures";
 import { createMigratedTestDb } from "../helpers/testDb";
 
 jest.mock("../../src/db/database", () => ({ getDatabase: jest.fn() }));
-jest.mock("../../src/sync/SyncContext", () => ({ useSync: jest.fn() }));
+jest.mock("../../src/contexts/SyncContext", () => ({ useSync: jest.fn() }));
 
 const mockUseSync = jest.mocked(useSync);
 let db: Awaited<ReturnType<typeof createMigratedTestDb>>;

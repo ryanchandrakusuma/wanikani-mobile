@@ -17,7 +17,7 @@ import {
 } from "../quiz/quizQueue";
 import { useSettings } from "../settings/SettingsContext";
 import { hasReading } from "../subjects/model";
-import { useSync } from "../sync/SyncContext";
+import { useSync } from "../contexts/SyncContext";
 import { radius, spacing, useTheme } from "../theme";
 import { startOfLocalDay } from "../utils/time";
 

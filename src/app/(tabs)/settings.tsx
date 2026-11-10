@@ -7,7 +7,7 @@ import {
   DAILY_LESSON_LIMIT_STEP, DEFAULT_DAILY_LESSON_LIMIT, MAX_DAILY_LESSON_LIMIT, MIN_DAILY_LESSON_LIMIT,
 } from "../../db/settings";
 import { useSettings } from "../../settings/SettingsContext";
-import { useSync } from "../../sync/SyncContext";
+import { useSync } from "../../contexts/SyncContext";
 import { syncLabel } from "../../sync/syncLabel";
 import { radius, spacing, useTheme } from "../../theme";
 import { formatCount } from "../../utils/format";

@@ -1,6 +1,6 @@
 import { formatCount } from "../utils/format";
 import { formatRelative } from "../utils/time";
-import type { SyncPhase } from "./SyncContext";
+import type { SyncPhase } from "../contexts/SyncContext";
 import type { SyncProgress } from "./syncEngine";
 
 /** One-line sync status: "Syncing items… 4,000 / 9,321", "Synced 2 min ago", or the error. */

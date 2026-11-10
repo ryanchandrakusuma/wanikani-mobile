@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import Settings from "../../src/app/(tabs)/settings";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useSettings } from "../../src/settings/SettingsContext";
-import { useSync } from "../../src/sync/SyncContext";
+import { useSync } from "../../src/contexts/SyncContext";
 
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
 jest.mock("react-native-safe-area-context", () => {
@@ -12,7 +12,7 @@ jest.mock("react-native-safe-area-context", () => {
   return { SafeAreaView: View };
 });
 jest.mock("../../src/contexts/AuthContext", () => ({ useAuth: jest.fn() }));
-jest.mock("../../src/sync/SyncContext", () => ({ useSync: jest.fn() }));
+jest.mock("../../src/contexts/SyncContext", () => ({ useSync: jest.fn() }));
 jest.mock("../../src/settings/SettingsContext", () => ({ useSettings: jest.fn() }));
 
 type SyncValue = ReturnType<typeof useSync>;

@@ -6,7 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Panel } from "../../components/Panel";
 import type { ForecastHour } from "../../db/queries";
 import { useSettings } from "../../settings/SettingsContext";
-import { useSync } from "../../sync/SyncContext";
+import { useSync } from "../../contexts/SyncContext";
 import { syncLabel } from "../../sync/syncLabel";
 import { itemColors, radius, spacing, useTheme } from "../../theme";
 import { useTodo } from "../../todo/useTodo";

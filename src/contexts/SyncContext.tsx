@@ -1,14 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppState } from "react-native";
 import { WKApiError } from "../api/client";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "./AuthContext";
 import { getDatabase } from "../db/database";
 import {
   claimForUser, countPendingOutbox, getLastFullSync, getStoredCounts, type StoredCounts,
 } from "../db/repository";
 import type { Db } from "../db/types";
 import { flushOutbox } from "../outbox/sender";
-import { SYNC_RESOURCE_NAMES, syncAll, type SyncProgress } from "./syncEngine";
+import { SYNC_RESOURCE_NAMES, syncAll, type SyncProgress } from "../sync/syncEngine";
 
 /** Coming back to the app re-syncs at most this often. */
 export const FOREGROUND_SYNC_INTERVAL_MS = 60_000;

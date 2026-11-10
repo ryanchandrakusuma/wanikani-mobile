@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { getDatabase } from "../db/database";
 import { getForecast, getTodoCounts, type ForecastHour, type TodoCounts } from "../db/queries";
-import { useSync } from "../sync/SyncContext";
+import { useSync } from "../contexts/SyncContext";
 import { startOfLocalDay } from "../utils/time";
 
 export interface Todo extends TodoCounts {
