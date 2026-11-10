@@ -1,136 +1,175 @@
-import { Alert } from "react-native";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, within } from "@testing-library/react-native";
 import { router } from "expo-router";
 import Home from "../../src/app/(tabs)/home";
 import { useAuth } from "../../src/auth/AuthContext";
+import { useSettings } from "../../src/settings/SettingsContext";
 import { useSync } from "../../src/sync/SyncContext";
+import { useTodo, type Todo } from "../../src/todo/useTodo";
 
-jest.mock("expo-router", () => ({ Redirect: () => null, router: { replace: jest.fn() } }));
+jest.mock("expo-router", () => ({ router: { push: jest.fn() } }));
 jest.mock("react-native-safe-area-context", () => {
   const { View } = jest.requireActual("react-native");
   return { SafeAreaView: View };
 });
 jest.mock("../../src/auth/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("../../src/sync/SyncContext", () => ({ useSync: jest.fn() }));
+jest.mock("../../src/settings/SettingsContext", () => ({ useSettings: jest.fn() }));
+jest.mock("../../src/todo/useTodo", () => ({ useTodo: jest.fn() }));
 
-type SyncValue = ReturnType<typeof useSync>;
-const mockSignOut = jest.fn();
-const mockPending = jest.fn();
+const user = {
+  id: "u1", username: "koichi", level: 7, profile_url: "", started_at: "",
+  current_vacation_started_at: null as string | null,
+  subscription: { active: true, type: "recurring", max_level_granted: 60, period_ends_at: null },
+};
 
-function setup(sync: Partial<SyncValue> = {}) {
+function setup(todo: Partial<Todo> | null, opts: { limit?: number; vacation?: boolean; sync?: Partial<ReturnType<typeof useSync>> } = {}) {
   jest.mocked(useAuth).mockReturnValue({
-    status: "signedIn",
-    user: {
-      id: "u1", username: "koichi", level: 7, profile_url: "", started_at: "",
-      current_vacation_started_at: null,
-      subscription: { active: true, type: "recurring", max_level_granted: 60, period_ends_at: null },
-    },
-    signOut: mockSignOut,
+    user: { ...user, current_vacation_started_at: opts.vacation ? "2026-03-01T00:00:00Z" : null },
     refreshUser: jest.fn(),
   } as unknown as ReturnType<typeof useAuth>);
   jest.mocked(useSync).mockReturnValue({
-    phase: "idle",
-    progress: null,
-    lastSyncedAt: null,
-    error: null,
-    counts: null,
-    sync: jest.fn(),
-    pendingOutboxCount: mockPending,
-    ...sync,
+    phase: "idle", progress: null, lastSyncedAt: null, error: null, counts: null,
+    sync: jest.fn(), pendingOutboxCount: jest.fn(), ...opts.sync,
+  });
+  jest.mocked(useSettings).mockReturnValue({ dailyLessonLimit: opts.limit ?? 15, setDailyLessonLimit: jest.fn() });
+  jest.mocked(useTodo).mockReturnValue({
+    todo: todo && {
+      lessonsAvailable: 0, lessonsStartedToday: 0, reviewsAvailable: 0, nextReviewAt: null, forecast: [],
+      ...todo,
+    },
+    refresh: jest.fn(),
   });
 }
 
-beforeEach(() => {
-  mockSignOut.mockReset().mockResolvedValue(undefined);
-  mockPending.mockReset().mockResolvedValue(0);
-  jest.mocked(router.replace).mockReset();
+const card = (id: string) => within(screen.getByTestId(id));
+
+beforeEach(() => jest.mocked(router.push).mockReset());
+
+describe("header", () => {
+  it("greets the user with their level", async () => {
+    setup({});
+    await render(<Home />);
+
+    expect(screen.getByText("koichi")).toBeTruthy();
+    expect(screen.getByText("Level 7")).toBeTruthy();
+  });
+
+  it("shows a banner in vacation mode", async () => {
+    setup({}, { vacation: true });
+    await render(<Home />);
+
+    expect(screen.getByText(/Vacation mode is on/)).toBeTruthy();
+  });
 });
 
-const status = () => screen.getByTestId("sync-status");
-
-describe("sync status", () => {
-  it("shows download progress", async () => {
-    setup({ phase: "syncing", progress: { resource: "subjects", label: "items", fetched: 4000, total: 9321 } });
+describe("lessons card", () => {
+  it("shows the total available and today's progress toward the limit", async () => {
+    setup({ lessonsAvailable: 1234, lessonsStartedToday: 3 }, { limit: 15 });
     await render(<Home />);
 
-    expect(status()).toHaveTextContent("Syncing items… 4,000 / 9,321");
+    expect(card("lessons-card").getByText("1,234")).toBeTruthy();
+    expect(card("lessons-card").getByText("3 of 15 done today")).toBeTruthy();
   });
 
-  it("shows when the last sync finished", async () => {
-    setup({ lastSyncedAt: new Date(Date.now() - 5 * 60_000).toISOString() });
+  it("says when the daily limit is reached", async () => {
+    setup({ lessonsAvailable: 40, lessonsStartedToday: 20 }, { limit: 20 });
     await render(<Home />);
 
-    expect(status()).toHaveTextContent("Synced 5 min ago");
+    expect(card("lessons-card").getByText("Daily limit reached (20)")).toBeTruthy();
   });
 
-  it("says when nothing has synced yet", async () => {
-    setup();
+  it("opens the lessons screen", async () => {
+    setup({ lessonsAvailable: 5 });
     await render(<Home />);
 
-    expect(status()).toHaveTextContent("Not synced yet");
+    await fireEvent.press(screen.getByRole("button", { name: "Start lessons" }));
+
+    expect(router.push).toHaveBeenCalledWith("/lessons");
   });
 
-  it("shows the sync error", async () => {
-    setup({ phase: "error", error: "No connection to WaniKani." });
+  it("disables Start when there are no lessons", async () => {
+    setup({ lessonsAvailable: 0 });
     await render(<Home />);
 
-    expect(status()).toHaveTextContent("No connection to WaniKani.");
+    expect(card("lessons-card").getByText("No lessons waiting")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start lessons" })).toBeDisabled();
+  });
+});
+
+describe("reviews card", () => {
+  it("shows reviews ready now and opens the review screen", async () => {
+    setup({ reviewsAvailable: 42 });
+    await render(<Home />);
+
+    expect(card("reviews-card").getByText("42")).toBeTruthy();
+    expect(card("reviews-card").getByText("Ready now")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Start reviews" }));
+    expect(router.push).toHaveBeenCalledWith("/reviews");
   });
 
-  it("lists what is stored on the device", async () => {
+  it("says all caught up and disables Start at zero", async () => {
+    setup({ reviewsAvailable: 0 });
+    await render(<Home />);
+
+    expect(card("reviews-card").getByText("All caught up")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Start reviews" })).toBeDisabled();
+  });
+});
+
+describe("upcoming reviews", () => {
+  it("shows when the next reviews arrive", async () => {
+    const next = new Date(Date.now() + 2 * 3_600_000 + 60_000);
+    setup({ nextReviewAt: next.toISOString() });
+    await render(<Home />);
+
+    const hh = String(next.getHours()).padStart(2, "0");
+    const mm = String(next.getMinutes()).padStart(2, "0");
+    expect(screen.getByTestId("next-review")).toHaveTextContent(`Next reviews in 2 h · ${hh}:${mm}`);
+  });
+
+  it("says when nothing is scheduled", async () => {
+    setup({});
+    await render(<Home />);
+
+    expect(screen.getByTestId("next-review")).toHaveTextContent("No reviews scheduled");
+  });
+
+  it("lists the 24-hour forecast with running totals", async () => {
     setup({
-      counts: {
-        subjects: 9321, assignments: 812, study_materials: 3, review_statistics: 640,
-        level_progressions: 7, srs_systems: 2,
-      },
+      reviewsAvailable: 5,
+      forecast: [
+        { hourStart: new Date(2026, 2, 1, 14, 0), count: 12, cumulative: 17 },
+        { hourStart: new Date(2026, 2, 1, 18, 0), count: 30, cumulative: 47 },
+      ],
     });
     await render(<Home />);
 
-    expect(screen.getByText("Local summary")).toBeTruthy();
-    expect(screen.getByText("9,321")).toBeTruthy();
-    expect(screen.getByText("812")).toBeTruthy();
+    expect(screen.getByLabelText("14:00: 12 new, 17 total")).toBeTruthy();
+    expect(screen.getByLabelText("18:00: 30 new, 47 total")).toBeTruthy();
+    expect(screen.getByText("+30")).toBeTruthy();
+  });
+
+  it("shows an empty state for a quiet day", async () => {
+    setup({ forecast: [] });
+    await render(<Home />);
+
+    expect(screen.getByText("No reviews in the next 24 hours.")).toBeTruthy();
   });
 });
 
-describe("disconnect account", () => {
-  const disconnect = () => screen.getByRole("button", { name: "Disconnect account" });
-
-  it("signs out straight away when nothing is waiting to be sent", async () => {
-    setup();
+describe("sync line", () => {
+  it("shows sync progress", async () => {
+    setup({}, { sync: { phase: "syncing", progress: { resource: "subjects", label: "items", fetched: 4000, total: 9321 } } });
     await render(<Home />);
 
-    await fireEvent.press(disconnect());
-
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/login"));
-    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("sync-status")).toHaveTextContent("Syncing items… 4,000 / 9,321");
   });
+});
 
-  it("warns first when results are still unsent", async () => {
-    setup();
-    mockPending.mockResolvedValue(3);
-    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
-    await render(<Home />);
+it("renders before the to-do list has loaded", async () => {
+  setup(null);
+  await render(<Home />);
 
-    await fireEvent.press(disconnect());
-
-    await waitFor(() => expect(alert).toHaveBeenCalled());
-    expect(alert.mock.calls[0][1]).toContain("3 results haven't been sent");
-    expect(mockSignOut).not.toHaveBeenCalled();
-
-    // Choosing "Disconnect anyway" signs out
-    const buttons = alert.mock.calls[0][2]!;
-    buttons.find((b) => b.style === "destructive")!.onPress!();
-    await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
-  });
-
-  it("uses singular wording for one unsent result", async () => {
-    setup();
-    mockPending.mockResolvedValue(1);
-    const alert = jest.spyOn(Alert, "alert").mockImplementation(() => {});
-    await render(<Home />);
-
-    await fireEvent.press(disconnect());
-
-    await waitFor(() => expect(alert.mock.calls[0][1]).toContain("1 result hasn't been sent"));
-  });
+  expect(screen.getByTestId("lessons-card")).toBeTruthy();
+  expect(screen.getByTestId("next-review")).toHaveTextContent("");
 });
