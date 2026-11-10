@@ -31,8 +31,12 @@ src/app/(tabs)/   bottom tabs: Home, Dashboard, Settings
 src/api/          WaniKani API client and types
 src/auth/         token storage and auth state
 src/components/   shared UI (Panel, Row, ComingSoon)
-src/db/           SQLite schema (versioned migrations), queries, settings
+src/db/           SQLite schema (versioned migrations), queries, lessons, settings
+src/lessons/      lesson pages, batches of 5, lesson view
+src/outbox/       sends finished lessons to WaniKani (queued offline)
+src/quiz/         answer checking (typos, synonyms, kana) and quiz queue
 src/settings/     device preferences (daily lesson limit, default 15)
+src/subjects/     typed subject model and mnemonic markup
 src/sync/         downloads WaniKani data into SQLite (incremental via updated_after)
 src/todo/         lesson/review to-do list hook
 src/theme/        colors and spacing
@@ -45,7 +49,7 @@ __tests__/    unit tests, mirroring src/ (db/sync tests use a real in-memory SQL
 1. ✅ Setup and auth (token login, API client with rate-limit retry)
 2. ✅ Local database (SQLite) and sync
 3. ✅ Home screen: lesson/review to-do list, 24h forecast, tabs, daily lesson limit
-4. Lesson window
+4. ✅ Lesson window: batches of 5, required quiz, daily limit with "Do more anyway", sent to WaniKani
 5. Review window
 6. Offline outbox sync and conflict handling
 7. Local notifications
