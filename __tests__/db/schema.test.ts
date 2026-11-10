@@ -1,10 +1,27 @@
-import { migrate, SCHEMA_VERSION } from "../../src/db/schema";
+import { MIGRATIONS, migrate, SCHEMA_VERSION } from "../../src/db/schema";
 import { createTestDb } from "../helpers/testDb";
 
 const EXPECTED_TABLES = [
   "activity_log", "assignments", "level_progressions", "meta", "outbox", "review_statistics",
-  "srs_systems", "study_materials", "subjects", "sync_state",
+  "settings", "srs_systems", "study_materials", "subjects", "sync_state",
 ];
+
+describe("upgrading an existing database", () => {
+  it("upgrades a v1 database to the latest version without losing data", async () => {
+    const db = createTestDb();
+    // Simulate a phone that installed the Step 2 app (schema v1)
+    await db.execAsync(MIGRATIONS[0]);
+    await db.execAsync("PRAGMA user_version = 1");
+    await db.runAsync(
+      "INSERT INTO subjects (id, object, level, lesson_position, data) VALUES (1, 'kanji', 1, 0, '{}')", [],
+    );
+
+    await migrate(db);
+
+    expect(await db.getFirstAsync("SELECT COUNT(*) AS n FROM subjects", [])).toEqual({ n: 1 });
+    expect(await db.getFirstAsync("SELECT COUNT(*) AS n FROM settings", [])).toEqual({ n: 0 });
+  });
+});
 
 async function tableNames(db: ReturnType<typeof createTestDb>) {
   const rows = await db.getAllAsync<{ name: string }>(
