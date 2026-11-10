@@ -1,4 +1,4 @@
-import type { WKResource, WKUser } from "./types";
+import type { WKCollection, WKResource, WKUser } from "./types";
 
 const BASE_URL = "https://api.wanikani.com/v2";
 const API_REVISION = "20170710";
@@ -18,6 +18,21 @@ export class WKApiError extends Error {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
+ * Accepts an API path ("/subjects") or a full URL from a collection's
+ * `pages.next_url`. Full URLs must point at the WaniKani API, so the token
+ * is never sent anywhere else.
+ */
+function resolveUrl(pathOrUrl: string): string {
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    if (!pathOrUrl.startsWith(`${BASE_URL}/`)) {
+      throw new WKApiError("Refusing to send the API token outside WaniKani.", "client");
+    }
+    return pathOrUrl;
+  }
+  return `${BASE_URL}${pathOrUrl}`;
+}
+
+/**
  * Thin wrapper around fetch for the WaniKani API.
  * - Adds auth and revision headers
  * - Retries on 429 (rate limit: 60 req/min) using the RateLimit-Reset header
@@ -30,8 +45,9 @@ export async function wkRequest<T>(
   attempt = 0,
 ): Promise<T> {
   let res: Response;
+  const url = resolveUrl(path);
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
+    res = await fetch(url, {
       ...init,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -57,7 +73,7 @@ export async function wkRequest<T>(
     const reset = Number(res.headers.get("RateLimit-Reset"));
     const waitMs = reset ? Math.max(reset * 1000 - Date.now(), 1000) : 5000;
     await sleep(Math.min(waitMs, 60_000));
-    return wkRequest<T>(token, path, init, attempt + 1);
+    return wkRequest<T>(token, url, init, attempt + 1);
   }
 
   if (res.status >= 500) {
@@ -69,4 +85,9 @@ export async function wkRequest<T>(
 
 export function getUser(token: string) {
   return wkRequest<WKResource<WKUser>>(token, "/user");
+}
+
+/** One page of a collection endpoint. Pass a path for page 1, then `pages.next_url`. */
+export function getCollectionPage<T>(token: string, pathOrNextUrl: string) {
+  return wkRequest<WKCollection<T>>(token, pathOrNextUrl);
 }
