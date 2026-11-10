@@ -105,6 +105,14 @@ export const MIGRATIONS: string[] = [
     last_error  TEXT
   );
   `,
+
+  // v2 — Step 3: device preferences. Not wiped when the account changes.
+  `
+  CREATE TABLE settings (
+    key    TEXT PRIMARY KEY NOT NULL,
+    value  TEXT NOT NULL
+  );
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
