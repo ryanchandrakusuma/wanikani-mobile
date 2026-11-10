@@ -2,7 +2,7 @@ import { Linking } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
 import Login from "../../src/app/login";
-import { useAuth } from "../../src/auth/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 import { WKApiError } from "../../src/api/client";
 
 jest.mock("expo-router", () => ({ router: { replace: jest.fn() } }));
@@ -10,7 +10,7 @@ jest.mock("react-native-safe-area-context", () => {
   const { View } = jest.requireActual("react-native");
   return { SafeAreaView: View };
 });
-jest.mock("../../src/auth/AuthContext", () => ({ useAuth: jest.fn() }));
+jest.mock("../../src/contexts/AuthContext", () => ({ useAuth: jest.fn() }));
 
 const mockSignIn = jest.fn();
 const mockReplace = jest.mocked(router.replace);

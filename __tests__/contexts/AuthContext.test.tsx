@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
-import { AuthProvider, useAuth } from "../../src/auth/AuthContext";
+import { AuthProvider, useAuth } from "../../src/contexts/AuthContext";
 import { getUser, WKApiError } from "../../src/api/client";
 import { tokenStorage } from "../../src/auth/tokenStorage";
 import type { WKResource, WKUser } from "../../src/api/types";

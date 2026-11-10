@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getUser, WKApiError } from "../api/client";
 import type { WKUser } from "../api/types";
-import { tokenStorage } from "./tokenStorage";
+import { tokenStorage } from "../auth/tokenStorage";
 
 type AuthStatus = "loading" | "signedOut" | "signedIn";
 

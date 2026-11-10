@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AuthProvider } from "../auth/AuthContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import { SettingsProvider } from "../settings/SettingsContext";
 import { SyncProvider } from "../sync/SyncContext";
 import { useTheme } from "../theme";

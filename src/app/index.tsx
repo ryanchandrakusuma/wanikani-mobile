@@ -1,6 +1,6 @@
 import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../theme";
 
 // Entry point: decides where to send the user based on saved token.

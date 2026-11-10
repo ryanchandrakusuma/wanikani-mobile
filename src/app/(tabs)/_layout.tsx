@@ -1,6 +1,6 @@
 import { Redirect } from "expo-router";
 import { NativeTabs } from "expo-router/native-tabs";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useTheme } from "../../theme";
 
 // Bottom tabs. Material icons on Android, SF Symbols on iPad/iPhone.

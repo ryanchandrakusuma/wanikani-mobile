@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { Panel } from "../../components/Panel";
 import type { ForecastHour } from "../../db/queries";
 import { useSettings } from "../../settings/SettingsContext";

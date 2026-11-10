@@ -1,7 +1,7 @@
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { Panel, Row } from "../../components/Panel";
 import {
   DAILY_LESSON_LIMIT_STEP, DEFAULT_DAILY_LESSON_LIMIT, MAX_DAILY_LESSON_LIMIT, MIN_DAILY_LESSON_LIMIT,

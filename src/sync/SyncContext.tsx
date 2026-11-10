@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AppState } from "react-native";
 import { WKApiError } from "../api/client";
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
 import { getDatabase } from "../db/database";
 import {
   claimForUser, countPendingOutbox, getLastFullSync, getStoredCounts, type StoredCounts,

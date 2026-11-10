@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { AppState } from "react-native";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { WKApiError } from "../../src/api/client";
-import { useAuth } from "../../src/auth/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 import { getDatabase } from "../../src/db/database";
 import { claimForUser, upsert } from "../../src/db/repository";
 import { FOREGROUND_SYNC_INTERVAL_MS, SyncProvider, useSync } from "../../src/sync/SyncContext";
@@ -11,7 +11,7 @@ import { flushOutbox } from "../../src/outbox/sender";
 import { subject } from "../helpers/fixtures";
 import { createMigratedTestDb } from "../helpers/testDb";
 
-jest.mock("../../src/auth/AuthContext", () => ({ useAuth: jest.fn() }));
+jest.mock("../../src/contexts/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("../../src/db/database", () => ({ getDatabase: jest.fn() }));
 jest.mock("../../src/sync/syncEngine", () => ({
   ...jest.requireActual("../../src/sync/syncEngine"),
