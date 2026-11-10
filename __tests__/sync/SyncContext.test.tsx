@@ -7,6 +7,7 @@ import { getDatabase } from "../../src/db/database";
 import { claimForUser, upsert } from "../../src/db/repository";
 import { FOREGROUND_SYNC_INTERVAL_MS, SyncProvider, useSync } from "../../src/sync/SyncContext";
 import { syncAll, type SyncOptions } from "../../src/sync/syncEngine";
+import { flushOutbox } from "../../src/outbox/sender";
 import { subject } from "../helpers/fixtures";
 import { createMigratedTestDb } from "../helpers/testDb";
 
@@ -16,9 +17,11 @@ jest.mock("../../src/sync/syncEngine", () => ({
   ...jest.requireActual("../../src/sync/syncEngine"),
   syncAll: jest.fn(),
 }));
+jest.mock("../../src/outbox/sender", () => ({ flushOutbox: jest.fn() }));
 
 const mockUseAuth = jest.mocked(useAuth);
 const mockSyncAll = jest.mocked(syncAll);
+const mockFlush = jest.mocked(flushOutbox);
 const mockSignOut = jest.fn();
 
 function signedInAs(userId: string | null, token: string | null = "tok") {
@@ -37,7 +40,31 @@ beforeEach(async () => {
   db = await createMigratedTestDb();
   jest.mocked(getDatabase).mockResolvedValue(db);
   mockSyncAll.mockReset().mockResolvedValue({} as never);
+  mockFlush.mockReset().mockResolvedValue({ sent: 0, dropped: 0, pending: 0 });
   mockSignOut.mockReset().mockResolvedValue(undefined);
+});
+
+it("sends queued results before downloading", async () => {
+  signedInAs("user-a");
+  const order: string[] = [];
+  mockFlush.mockImplementation(async () => { order.push("flush"); return { sent: 1, dropped: 0, pending: 0 }; });
+  mockSyncAll.mockImplementation(async () => { order.push("download"); return {} as never; });
+
+  const { result } = await renderHook(() => useSync(), { wrapper });
+
+  await waitFor(() => expect(result.current.phase).toBe("idle"));
+  expect(mockFlush).toHaveBeenCalledWith(db, "tok");
+  expect(order).toEqual(["flush", "download"]);
+});
+
+it("signs out when sending is refused with a 401", async () => {
+  signedInAs("user-a");
+  mockFlush.mockRejectedValue(new WKApiError("bad token", "unauthorized", 401));
+
+  await renderHook(() => useSync(), { wrapper });
+
+  await waitFor(() => expect(mockSignOut).toHaveBeenCalledTimes(1));
+  expect(mockSyncAll).not.toHaveBeenCalled();
 });
 
 it("shows stored counts without syncing when nobody is signed in", async () => {
