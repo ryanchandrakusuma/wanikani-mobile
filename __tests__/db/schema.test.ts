@@ -21,6 +21,20 @@ describe("upgrading an existing database", () => {
     expect(await db.getFirstAsync("SELECT COUNT(*) AS n FROM subjects", [])).toEqual({ n: 1 });
     expect(await db.getFirstAsync("SELECT COUNT(*) AS n FROM settings", [])).toEqual({ n: 0 });
   });
+
+  it("upgrades v2 to v3, keeping outbox rows and adding assignment_id", async () => {
+    const db = createTestDb();
+    await db.execAsync(MIGRATIONS[0]);
+    await db.execAsync(MIGRATIONS[1]);
+    await db.execAsync("PRAGMA user_version = 2");
+    await db.runAsync("INSERT INTO outbox (kind, payload, created_at) VALUES ('review', '{}', 'now')", []);
+
+    await migrate(db);
+
+    expect(await db.getAllAsync("SELECT kind, assignment_id FROM outbox", [])).toEqual([
+      { kind: "review", assignment_id: null },
+    ]);
+  });
 });
 
 async function tableNames(db: ReturnType<typeof createTestDb>) {
