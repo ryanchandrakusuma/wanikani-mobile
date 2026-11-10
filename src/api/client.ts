@@ -1,4 +1,4 @@
-import type { WKAssignment, WKCollection, WKCollectionItem, WKResource, WKUser } from "./types";
+import type { WKAssignment, WKCollection, WKCollectionItem, WKCreatedReview, WKResource, WKUser } from "./types";
 
 const BASE_URL = "https://api.wanikani.com/v2";
 const API_REVISION = "20170710";
@@ -104,5 +104,21 @@ export function startAssignment(token: string, id: number, startedAt: string) {
   return wkRequest<WKCollectionItem<WKAssignment>>(token, `/assignments/${id}/start`, {
     method: "PUT",
     body: JSON.stringify({ assignment: { started_at: startedAt } }),
+  });
+}
+
+export interface ReviewPayload {
+  assignment_id: number;
+  incorrect_meaning_answers: number;
+  incorrect_reading_answers: number;
+  /** When the item was answered (may be earlier than now if it was done offline). */
+  created_at: string;
+}
+
+/** Sends one finished review item to WaniKani. */
+export function createReview(token: string, review: ReviewPayload) {
+  return wkRequest<WKCreatedReview>(token, "/reviews", {
+    method: "POST",
+    body: JSON.stringify({ review }),
   });
 }

@@ -105,3 +105,19 @@ export interface WKSpacedRepetitionSystem {
   unlocking_stage_position: number;
   stages: { position: number; interval: number | null; interval_unit: string | null }[];
 }
+
+/** What POST /reviews sends back: the review plus the records it changed. */
+export interface WKCreatedReview extends WKResource<{
+  assignment_id: number;
+  subject_id: number;
+  starting_srs_stage: number;
+  ending_srs_stage: number;
+  incorrect_meaning_answers: number;
+  incorrect_reading_answers: number;
+  created_at: string;
+}> {
+  resources_updated: {
+    assignment: WKCollectionItem<WKAssignment>;
+    review_statistic?: WKCollectionItem<WKReviewStatistic>;
+  };
+}
