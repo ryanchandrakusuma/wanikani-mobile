@@ -12,7 +12,9 @@ import type { Db, SqlValue } from "./types";
 /** Rows per INSERT statement. Keeps bound parameters well under SQLite's limit. */
 const CHUNK = 100;
 
-async function upsertRows(db: Db, table: string, columns: string[], rows: SqlValue[][]) {
+async function upsertRows(
+  db: Db, table: string, columns: string[], rows: SqlValue[][], updateWhere = "",
+) {
   if (rows.length === 0) return;
   const placeholders = `(${columns.map(() => "?").join(", ")})`;
   const updates = columns.filter((c) => c !== "id").map((c) => `${c} = excluded.${c}`).join(", ");
@@ -20,11 +22,15 @@ async function upsertRows(db: Db, table: string, columns: string[], rows: SqlVal
     const chunk = rows.slice(i, i + CHUNK);
     await db.runAsync(
       `INSERT INTO ${table} (${columns.join(", ")}) VALUES ${chunk.map(() => placeholders).join(", ")}
-       ON CONFLICT(id) DO UPDATE SET ${updates}`,
+       ON CONFLICT(id) DO UPDATE SET ${updates} ${updateWhere}`,
       chunk.flat(),
     );
   }
 }
+
+/** Assignments with a result still in the outbox keep their local state until it is sent. */
+const NOT_PENDING_IN_OUTBOX =
+  "WHERE assignments.id NOT IN (SELECT assignment_id FROM outbox WHERE assignment_id IS NOT NULL)";
 
 const bool = (b: boolean) => (b ? 1 : 0);
 
@@ -49,6 +55,7 @@ export const upsert = {
         a.data.started_at, a.data.passed_at, a.data.burned_at, a.data.available_at,
         bool(a.data.hidden), a.data_updated_at, JSON.stringify(a.data),
       ]),
+      NOT_PENDING_IN_OUTBOX,
     ),
 
   study_materials: (db: Db, items: WKCollectionItem<WKStudyMaterial>[]) =>
