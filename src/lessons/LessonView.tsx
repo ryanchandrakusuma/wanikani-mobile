@@ -57,7 +57,8 @@ export function LessonView({ item, components, page, onPageChange }: Props) {
   );
 }
 
-function PageContent({ page, item, components }: { page: LessonPage; item: LessonItem; components: Subject[] }) {
+/** The body of one lesson tab (also used for "Item info" in reviews). */
+export function PageContent({ page, item, components }: { page: LessonPage; item: LessonItem; components: Subject[] }) {
   const theme = useTheme();
   const { subject, study } = item;
   const d = subject.data;
