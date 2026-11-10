@@ -7,6 +7,7 @@ import {
   claimForUser, countPendingOutbox, getLastFullSync, getStoredCounts, type StoredCounts,
 } from "../db/repository";
 import type { Db } from "../db/types";
+import { flushOutbox } from "../outbox/sender";
 import { SYNC_RESOURCE_NAMES, syncAll, type SyncProgress } from "./syncEngine";
 
 /** Coming back to the app re-syncs at most this often. */
@@ -76,6 +77,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       try {
         // Different account than last time → wipe before downloading.
         await claimForUser(db, userId);
+        // Send finished lessons first, so the download below brings back WaniKani's view of them.
+        await flushOutbox(db, token);
         await syncAll(db, token, { onProgress: setProgress });
         setPhase("idle");
       } catch (e) {
