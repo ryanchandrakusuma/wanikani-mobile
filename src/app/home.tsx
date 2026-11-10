@@ -79,7 +79,7 @@ export default function Home() {
             <Row label="Review stats" value={formatCount(counts.review_statistics)} />
             <Row label="Your notes" value={formatCount(counts.study_materials)} />
             <Row label="Levels" value={formatCount(counts.level_progressions)} />
-            <Row label="SRS systems" value={formatCount(counts.srs_systems)} />
+            <Row label="Spaced repetition systems" value={formatCount(counts.srs_systems)} />
           </View>
         )}
 
