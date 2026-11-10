@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-import Lessons from "../../src/app/lessons";
+import Lessons from "../../src/pages/LessonsPage";
 import { getDatabase } from "../../src/db/database";
 import { toWkTime } from "../../src/db/queries";
 import { upsert } from "../../src/db/repository";
