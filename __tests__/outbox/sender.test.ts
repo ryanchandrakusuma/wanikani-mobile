@@ -1,5 +1,6 @@
-import { getAssignment, startAssignment, WKApiError } from "../../src/api/client";
+import { createReview, getAssignment, startAssignment, WKApiError } from "../../src/api/client";
 import { completeLessons, getLessonQueue } from "../../src/db/lessons";
+import { completeReview, getReviewQueue } from "../../src/db/reviews";
 import { getUpdatedAfter, saveSyncState, upsert } from "../../src/db/repository";
 import { flushOutbox } from "../../src/outbox/sender";
 import { assignment, subject } from "../helpers/fixtures";
@@ -9,10 +10,12 @@ jest.mock("../../src/api/client", () => ({
   ...jest.requireActual("../../src/api/client"),
   startAssignment: jest.fn(),
   getAssignment: jest.fn(),
+  createReview: jest.fn(),
 }));
 
 const mockStart = jest.mocked(startAssignment);
 const mockGet = jest.mocked(getAssignment);
+const mockReview = jest.mocked(createReview);
 type TestDb = Awaited<ReturnType<typeof createMigratedTestDb>>;
 
 const NOW = new Date("2026-03-01T10:00:00.000Z");
@@ -38,6 +41,7 @@ const outboxCount = async (db: TestDb) => (await db.getFirstAsync<{ n: number }>
 beforeEach(() => {
   mockStart.mockReset();
   mockGet.mockReset();
+  mockReview.mockReset();
 });
 
 it("sends finished lessons and stores WaniKani's response", async () => {
@@ -112,12 +116,81 @@ it("throws when the token is rejected, keeping the queue", async () => {
   expect(await outboxCount(db)).toBe(1);
 });
 
-it("leaves reviews queued for a later step", async () => {
-  const db = await createMigratedTestDb();
-  await db.runAsync("INSERT INTO outbox (kind, payload, created_at) VALUES ('review', '{}', 'now')", []);
+describe("reviews", () => {
+  const REVIEWED = new Date("2026-03-01T10:31:00.000Z");
 
-  expect(await flushOutbox(db, "tok")).toEqual({ sent: 0, dropped: 0, pending: 1 });
-  expect(mockStart).not.toHaveBeenCalled();
+  /** Adds a due review item and finishes it locally with the given mistakes. */
+  async function finishReview(db: TestDb, id: number, meaningIncorrect = 0) {
+    await upsert.subjects(db, [subject(id)]);
+    await upsert.assignments(db, [assignment(id, { srs_stage: 3, available_at: "2026-03-01T10:00:00.000000Z" })]);
+    const item = (await getReviewQueue(db, REVIEWED)).find((i) => i.assignmentId === id)!;
+    await completeReview(db, item, { id, meaningIncorrect, readingIncorrect: 0 }, REVIEWED, () => `id-${++n}`);
+  }
+
+  const reviewResponse = (id: number, stage: number) => ({
+    object: "review", url: "", data_updated_at: SERVER_TIME,
+    data: {} as never,
+    resources_updated: {
+      assignment: assignment(id, { srs_stage: stage, available_at: "2026-03-02T09:00:00.000000Z" }, SERVER_TIME),
+      review_statistic: {
+        id: 500 + id, object: "review_statistic", url: "", data_updated_at: SERVER_TIME,
+        data: {
+          subject_id: id, subject_type: "kanji" as const, meaning_correct: 3, meaning_incorrect: 1,
+          reading_correct: 4, reading_incorrect: 0, percentage_correct: 88, hidden: false,
+        },
+      },
+    },
+  });
+
+  it("sends a review with the time it was answered and stores WaniKani's response", async () => {
+    const db = await createMigratedTestDb();
+    await finishReview(db, 1, 1);
+    mockReview.mockResolvedValue(reviewResponse(1, 2));
+
+    expect(await flushOutbox(db, "tok")).toEqual({ sent: 1, dropped: 0, pending: 0 });
+
+    expect(mockReview).toHaveBeenCalledWith("tok", {
+      assignment_id: 1, incorrect_meaning_answers: 1, incorrect_reading_answers: 0, created_at: REVIEWED.toISOString(),
+    });
+    expect(await db.getFirstAsync("SELECT srs_stage, available_at FROM assignments WHERE id = 1", []))
+      .toEqual({ srs_stage: 2, available_at: "2026-03-02T09:00:00.000000Z" });
+    expect(await db.getFirstAsync("SELECT subject_id, percentage_correct FROM review_statistics", []))
+      .toEqual({ subject_id: 1, percentage_correct: 88 });
+  });
+
+  it("sends a lesson before a review of the same item", async () => {
+    const db = await createMigratedTestDb();
+    await finishLessons(db, [1]);
+    await db.runAsync(
+      "INSERT INTO outbox (kind, payload, created_at, assignment_id) VALUES ('review', ?, ?, 1)",
+      [JSON.stringify({ assignment_id: 1, incorrect_meaning_answers: 0, incorrect_reading_answers: 0, created_at: "x" }), "x"],
+    );
+    const order: string[] = [];
+    mockStart.mockImplementation(async (_t, id) => { order.push("lesson"); return serverVersion(id); });
+    mockReview.mockImplementation(async () => { order.push("review"); return reviewResponse(1, 2); });
+
+    expect(await flushOutbox(db, "tok")).toEqual({ sent: 2, dropped: 0, pending: 0 });
+    expect(order).toEqual(["lesson", "review"]);
+  });
+
+  it("drops a review WaniKani refuses (done on the website) and takes the server's version", async () => {
+    const db = await createMigratedTestDb();
+    await finishReview(db, 1);
+    mockReview.mockRejectedValue(new WKApiError("Not available", "client", 422));
+    mockGet.mockResolvedValue(assignment(1, { srs_stage: 5 }, SERVER_TIME));
+
+    expect(await flushOutbox(db, "tok")).toEqual({ sent: 0, dropped: 1, pending: 0 });
+    expect(await db.getFirstAsync("SELECT srs_stage FROM assignments WHERE id = 1", [])).toEqual({ srs_stage: 5 });
+  });
+
+  it("keeps reviews queued when offline", async () => {
+    const db = await createMigratedTestDb();
+    await finishReview(db, 1);
+    mockReview.mockRejectedValue(new WKApiError("No connection", "network"));
+
+    expect(await flushOutbox(db, "tok")).toEqual({ sent: 0, dropped: 0, pending: 1 });
+    expect(await db.getFirstAsync("SELECT srs_stage FROM assignments WHERE id = 1", [])).toEqual({ srs_stage: 4 });
+  });
 });
 
 it("does nothing with an empty outbox", async () => {
