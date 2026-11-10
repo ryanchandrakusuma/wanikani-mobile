@@ -1,4 +1,6 @@
-import { getCollectionPage, getUser, wkRequest, WKApiError } from "../../src/api/client";
+import {
+  getAssignment, getCollectionPage, getUser, startAssignment, wkRequest, WKApiError,
+} from "../../src/api/client";
 
 type FakeResponse = {
   ok: boolean;
@@ -212,6 +214,26 @@ describe("full URLs (pagination)", () => {
     await promise;
 
     expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([url, url]);
+  });
+});
+
+describe("assignments", () => {
+  it("starts an assignment with the time the lesson was finished", async () => {
+    fetchMock.mockResolvedValueOnce(response(200, { id: 42 }));
+
+    await startAssignment("tok", 42, "2026-03-01T10:00:00.000Z");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://api.wanikani.com/v2/assignments/42/start");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body)).toEqual({ assignment: { started_at: "2026-03-01T10:00:00.000Z" } });
+  });
+
+  it("fetches a single assignment", async () => {
+    fetchMock.mockResolvedValueOnce(response(200, { id: 42 }));
+
+    await expect(getAssignment("tok", 42)).resolves.toEqual({ id: 42 });
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.wanikani.com/v2/assignments/42");
   });
 });
 
