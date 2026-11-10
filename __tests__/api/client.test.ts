@@ -1,5 +1,5 @@
 import {
-  getAssignment, getCollectionPage, getUser, startAssignment, wkRequest, WKApiError,
+  createReview, getAssignment, getCollectionPage, getUser, startAssignment, wkRequest, WKApiError,
 } from "../../src/api/client";
 
 type FakeResponse = {
@@ -234,6 +234,23 @@ describe("assignments", () => {
 
     await expect(getAssignment("tok", 42)).resolves.toEqual({ id: 42 });
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.wanikani.com/v2/assignments/42");
+  });
+});
+
+describe("reviews", () => {
+  it("posts a finished review item with the time it was answered", async () => {
+    fetchMock.mockResolvedValueOnce(response(200, { resources_updated: {} }));
+    const review = {
+      assignment_id: 42, incorrect_meaning_answers: 1, incorrect_reading_answers: 0,
+      created_at: "2026-03-01T10:00:00.000Z",
+    };
+
+    await createReview("tok", review);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://api.wanikani.com/v2/reviews");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ review });
   });
 });
 
