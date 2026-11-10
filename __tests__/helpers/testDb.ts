@@ -16,7 +16,7 @@ export function createTestDb(): Db & { raw: DatabaseSync } {
       raw.exec(sql);
     },
     async runAsync(sql: string, params: SqlValue[]) {
-      return raw.prepare(sql).run(...params);
+      return { changes: Number(raw.prepare(sql).run(...params).changes) };
     },
     async getAllAsync<T>(sql: string, params: SqlValue[]) {
       return raw.prepare(sql).all(...params) as T[];

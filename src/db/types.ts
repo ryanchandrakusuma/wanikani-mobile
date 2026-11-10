@@ -7,7 +7,8 @@ export type SqlValue = string | number | null;
 
 export interface Db {
   execAsync(sql: string): Promise<void>;
-  runAsync(sql: string, params: SqlValue[]): Promise<unknown>;
+  /** `changes` = rows inserted, updated or deleted by the statement. */
+  runAsync(sql: string, params: SqlValue[]): Promise<{ changes: number }>;
   getAllAsync<T>(sql: string, params: SqlValue[]): Promise<T[]>;
   getFirstAsync<T>(sql: string, params: SqlValue[]): Promise<T | null>;
   withTransactionAsync(task: () => Promise<void>): Promise<void>;
