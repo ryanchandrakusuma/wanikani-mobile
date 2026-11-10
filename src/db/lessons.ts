@@ -17,7 +17,8 @@ interface LessonRow {
   study: string | null;
 }
 
-function parseStudy(json: string | null): StudyMaterial {
+/** Your synonyms and notes, from a study_materials row (EMPTY_STUDY if none). */
+export function parseStudy(json: string | null): StudyMaterial {
   if (!json) return EMPTY_STUDY;
   const s = JSON.parse(json) as { meaning_synonyms?: string[]; meaning_note?: string | null; reading_note?: string | null };
   return {
