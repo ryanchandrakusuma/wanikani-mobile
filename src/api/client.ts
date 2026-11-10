@@ -1,4 +1,4 @@
-import type { WKCollection, WKResource, WKUser } from "./types";
+import type { WKAssignment, WKCollection, WKCollectionItem, WKResource, WKUser } from "./types";
 
 const BASE_URL = "https://api.wanikani.com/v2";
 const API_REVISION = "20170710";
@@ -90,4 +90,19 @@ export function getUser(token: string) {
 /** One page of a collection endpoint. Pass a path for page 1, then `pages.next_url`. */
 export function getCollectionPage<T>(token: string, pathOrNextUrl: string) {
   return wkRequest<WKCollection<T>>(token, pathOrNextUrl);
+}
+
+export function getAssignment(token: string, id: number) {
+  return wkRequest<WKCollectionItem<WKAssignment>>(token, `/assignments/${id}`);
+}
+
+/**
+ * Marks a lesson as done on WaniKani. `startedAt` is when the lesson was
+ * actually finished (it may be earlier than now if it was done offline).
+ */
+export function startAssignment(token: string, id: number, startedAt: string) {
+  return wkRequest<WKCollectionItem<WKAssignment>>(token, `/assignments/${id}/start`, {
+    method: "PUT",
+    body: JSON.stringify({ assignment: { started_at: startedAt } }),
+  });
 }
