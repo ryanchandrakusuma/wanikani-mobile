@@ -73,7 +73,7 @@ export default function Home() {
 
         {counts && (
           <View style={[styles.panel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.panelTitle, { color: theme.text }]}>Stored on this device</Text>
+            <Text style={[styles.panelTitle, { color: theme.text }]}>Local summary</Text>
             <Row label="Items" value={formatCount(counts.subjects)} />
             <Row label="Your progress" value={formatCount(counts.assignments)} />
             <Row label="Review stats" value={formatCount(counts.review_statistics)} />

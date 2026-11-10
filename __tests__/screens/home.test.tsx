@@ -86,7 +86,7 @@ describe("sync status", () => {
     });
     await render(<Home />);
 
-    expect(screen.getByText("Stored on this device")).toBeTruthy();
+    expect(screen.getByText("Local summary")).toBeTruthy();
     expect(screen.getByText("9,321")).toBeTruthy();
     expect(screen.getByText("812")).toBeTruthy();
   });
