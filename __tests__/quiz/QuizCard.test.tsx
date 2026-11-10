@@ -108,3 +108,29 @@ describe("reading question", () => {
     expect(screen.getByText("Answer: だい")).toBeTruthy();
   });
 });
+
+describe("item info", () => {
+  const { Text } = jest.requireActual("react-native");
+  const info = <Text>Mnemonic about a big person</Text>;
+
+  it("can be opened and closed after a wrong answer", async () => {
+    await render(<QuizCard subject={big} kind="meaning" synonyms={[]} onDone={jest.fn()} info={info} />);
+    await fireEvent.changeText(meaningInput(), "small");
+    await check();
+
+    expect(screen.queryByText("Mnemonic about a big person")).toBeNull();
+    await fireEvent.press(screen.getByRole("button", { name: "Item info" }));
+    expect(screen.getByText("Mnemonic about a big person")).toBeTruthy();
+    await fireEvent.press(screen.getByRole("button", { name: "Hide item info" }));
+    expect(screen.queryByText("Mnemonic about a big person")).toBeNull();
+  });
+
+  it("is not offered before answering or after a correct answer", async () => {
+    await render(<QuizCard subject={big} kind="meaning" synonyms={[]} onDone={jest.fn()} info={info} />);
+    expect(screen.queryByRole("button", { name: "Item info" })).toBeNull();
+
+    await fireEvent.changeText(meaningInput(), "big");
+    await check();
+    expect(screen.queryByRole("button", { name: "Item info" })).toBeNull();
+  });
+});
