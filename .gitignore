@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# personal Claude Code settings
+.claude/settings.local.json
