@@ -8,6 +8,7 @@ import {
 } from "../db/repository";
 import type { Db } from "../db/types";
 import { flushOutbox } from "../outbox/sender";
+import { prefetchRadicalImages } from "../subjects/radicalImages";
 import { SYNC_RESOURCE_NAMES, syncAll, type SyncProgress } from "../sync/syncEngine";
 
 /** Coming back to the app re-syncs at most this often. */
@@ -77,10 +78,11 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       try {
         // Different account than last time → wipe before downloading.
         await claimForUser(db, userId);
-        // Send finished lessons first, so the download below brings back WaniKani's view of them.
+        // Send finished lessons and reviews first, so the download below brings back WaniKani's view of them.
         await flushOutbox(db, token);
         await syncAll(db, token, { onProgress: setProgress });
         setPhase("idle");
+        void prefetchRadicalImages(db); // in the background; never fails the sync
       } catch (e) {
         setPhase("error");
         setError(e instanceof WKApiError ? e.message : "Sync failed. Pull down to try again.");
