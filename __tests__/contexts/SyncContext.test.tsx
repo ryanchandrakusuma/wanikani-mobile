@@ -8,6 +8,7 @@ import { claimForUser, upsert } from "../../src/db/repository";
 import { FOREGROUND_SYNC_INTERVAL_MS, SyncProvider, useSync } from "../../src/contexts/SyncContext";
 import { syncAll, type SyncOptions } from "../../src/sync/syncEngine";
 import { flushOutbox } from "../../src/outbox/sender";
+import { prefetchRadicalImages } from "../../src/subjects/radicalImages";
 import { subject } from "../helpers/fixtures";
 import { createMigratedTestDb } from "../helpers/testDb";
 
@@ -18,10 +19,12 @@ jest.mock("../../src/sync/syncEngine", () => ({
   syncAll: jest.fn(),
 }));
 jest.mock("../../src/outbox/sender", () => ({ flushOutbox: jest.fn() }));
+jest.mock("../../src/subjects/radicalImages", () => ({ prefetchRadicalImages: jest.fn() }));
 
 const mockUseAuth = jest.mocked(useAuth);
 const mockSyncAll = jest.mocked(syncAll);
 const mockFlush = jest.mocked(flushOutbox);
+const mockPrefetch = jest.mocked(prefetchRadicalImages);
 const mockSignOut = jest.fn();
 
 function signedInAs(userId: string | null, token: string | null = "tok") {
@@ -42,6 +45,7 @@ beforeEach(async () => {
   mockSyncAll.mockReset().mockResolvedValue({} as never);
   mockFlush.mockReset().mockResolvedValue({ sent: 0, dropped: 0, pending: 0 });
   mockSignOut.mockReset().mockResolvedValue(undefined);
+  mockPrefetch.mockReset().mockResolvedValue(undefined);
 });
 
 it("sends queued results before downloading", async () => {
@@ -55,6 +59,19 @@ it("sends queued results before downloading", async () => {
   await waitFor(() => expect(result.current.phase).toBe("idle"));
   expect(mockFlush).toHaveBeenCalledWith(db, "tok");
   expect(order).toEqual(["flush", "download"]);
+});
+
+it("downloads radical images after a successful sync only", async () => {
+  signedInAs("user-a");
+  const { result } = await renderHook(() => useSync(), { wrapper });
+  await waitFor(() => expect(result.current.phase).toBe("idle"));
+  expect(mockPrefetch).toHaveBeenCalledWith(db);
+
+  mockPrefetch.mockClear();
+  mockSyncAll.mockRejectedValueOnce(new WKApiError("No connection", "network"));
+  await act(() => result.current.sync());
+  expect(result.current.phase).toBe("error");
+  expect(mockPrefetch).not.toHaveBeenCalled();
 });
 
 it("signs out when sending is refused with a 401", async () => {
