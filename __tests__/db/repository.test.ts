@@ -26,6 +26,37 @@ describe("upsert", () => {
     expect(rows).toEqual([{ srs_stage: 5, passed_at: "2026-02-01T00:00:00Z" }]);
   });
 
+  it("does not overwrite an assignment whose result is still waiting in the outbox", async () => {
+    const db = await createMigratedTestDb();
+    await upsert.assignments(db, [assignment(1, { srs_stage: 1, started_at: "2026-03-01T10:00:00.000000Z" })]);
+    await upsert.assignments(db, [assignment(2, { srs_stage: 0 })]);
+    await db.runAsync(
+      "INSERT INTO outbox (kind, payload, created_at, assignment_id) VALUES ('start_assignment', '{}', 'now', 1)", [],
+    );
+
+    // A sync brings older server data (lesson not yet started on the server)
+    await upsert.assignments(db, [
+      assignment(1, { srs_stage: 0, started_at: null }),
+      assignment(2, { srs_stage: 3 }),
+    ]);
+
+    const rows = await db.getAllAsync<{ id: number; srs_stage: number }>("SELECT id, srs_stage FROM assignments ORDER BY id", []);
+    expect(rows).toEqual([{ id: 1, srs_stage: 1 }, { id: 2, srs_stage: 3 }]);
+  });
+
+  it("updates the assignment again once its outbox row is gone", async () => {
+    const db = await createMigratedTestDb();
+    await upsert.assignments(db, [assignment(1, { srs_stage: 1 })]);
+    await db.runAsync(
+      "INSERT INTO outbox (kind, payload, created_at, assignment_id) VALUES ('start_assignment', '{}', 'now', 1)", [],
+    );
+    await db.runAsync("DELETE FROM outbox", []);
+
+    await upsert.assignments(db, [assignment(1, { srs_stage: 2 })]);
+
+    expect(await db.getFirstAsync("SELECT srs_stage FROM assignments WHERE id = 1", [])).toEqual({ srs_stage: 2 });
+  });
+
   it("stores booleans as 0/1", async () => {
     const db = await createMigratedTestDb();
 
