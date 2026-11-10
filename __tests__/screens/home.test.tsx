@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react-native
 import { router } from "expo-router";
 import Home from "../../src/app/(tabs)/home";
 import { useAuth } from "../../src/contexts/AuthContext";
-import { useSettings } from "../../src/settings/SettingsContext";
+import { useSettings } from "../../src/contexts/SettingsContext";
 import { useSync } from "../../src/contexts/SyncContext";
 import { useTodo, type Todo } from "../../src/todo/useTodo";
 
@@ -13,7 +13,7 @@ jest.mock("react-native-safe-area-context", () => {
 });
 jest.mock("../../src/contexts/AuthContext", () => ({ useAuth: jest.fn() }));
 jest.mock("../../src/contexts/SyncContext", () => ({ useSync: jest.fn() }));
-jest.mock("../../src/settings/SettingsContext", () => ({ useSettings: jest.fn() }));
+jest.mock("../../src/contexts/SettingsContext", () => ({ useSettings: jest.fn() }));
 jest.mock("../../src/todo/useTodo", () => ({ useTodo: jest.fn() }));
 
 const user = {

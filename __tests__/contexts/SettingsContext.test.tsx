@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import { getDatabase } from "../../src/db/database";
 import { getDailyLessonLimit, setDailyLessonLimit } from "../../src/db/settings";
-import { SettingsProvider, useSettings } from "../../src/settings/SettingsContext";
+import { SettingsProvider, useSettings } from "../../src/contexts/SettingsContext";
 import { createMigratedTestDb } from "../helpers/testDb";
 
 jest.mock("../../src/db/database", () => ({ getDatabase: jest.fn() }));

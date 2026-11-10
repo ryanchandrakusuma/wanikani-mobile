@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 import { Panel } from "../../components/Panel";
 import type { ForecastHour } from "../../db/queries";
-import { useSettings } from "../../settings/SettingsContext";
+import { useSettings } from "../../contexts/SettingsContext";
 import { useSync } from "../../contexts/SyncContext";
 import { syncLabel } from "../../sync/syncLabel";
 import { itemColors, radius, spacing, useTheme } from "../../theme";

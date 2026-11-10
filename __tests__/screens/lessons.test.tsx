@@ -5,7 +5,7 @@ import Lessons from "../../src/app/lessons";
 import { getDatabase } from "../../src/db/database";
 import { toWkTime } from "../../src/db/queries";
 import { upsert } from "../../src/db/repository";
-import { useSettings } from "../../src/settings/SettingsContext";
+import { useSettings } from "../../src/contexts/SettingsContext";
 import { useSync } from "../../src/contexts/SyncContext";
 import { assignment, subject } from "../helpers/fixtures";
 import { createMigratedTestDb } from "../helpers/testDb";
@@ -19,7 +19,7 @@ jest.mock("react-native-safe-area-context", () => {
   return { SafeAreaView: View };
 });
 jest.mock("../../src/db/database", () => ({ getDatabase: jest.fn() }));
-jest.mock("../../src/settings/SettingsContext", () => ({ useSettings: jest.fn() }));
+jest.mock("../../src/contexts/SettingsContext", () => ({ useSettings: jest.fn() }));
 jest.mock("../../src/contexts/SyncContext", () => ({ useSync: jest.fn() }));
 
 type TestDb = Awaited<ReturnType<typeof createMigratedTestDb>>;

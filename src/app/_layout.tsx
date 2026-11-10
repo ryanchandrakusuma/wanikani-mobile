@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "../contexts/AuthContext";
-import { SettingsProvider } from "../settings/SettingsContext";
+import { SettingsProvider } from "../contexts/SettingsContext";
 import { SyncProvider } from "../contexts/SyncContext";
 import { useTheme } from "../theme";
 

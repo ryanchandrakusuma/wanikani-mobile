@@ -15,7 +15,7 @@ import { QuizCard } from "../quiz/QuizCard";
 import {
   answerQuestion, createQuiz, currentQuestion, isFinished, quizProgress, type QuizState,
 } from "../quiz/quizQueue";
-import { useSettings } from "../settings/SettingsContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { hasReading } from "../subjects/model";
 import { useSync } from "../contexts/SyncContext";
 import { radius, spacing, useTheme } from "../theme";
