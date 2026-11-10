@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { toKana } from "wanakana";
 import { SubjectGlyph } from "../components/SubjectGlyph";
@@ -13,6 +13,8 @@ interface Props {
   synonyms: string[];
   /** Called after the user has seen the result and pressed Next. */
   onDone: (verdict: "correct" | "incorrect") => void;
+  /** Optional details (meanings, readings, mnemonics) behind an "Item info" button after a wrong answer. */
+  info?: ReactNode;
 }
 
 /** Accepted answers, primary first, for showing after a wrong answer. */
@@ -25,11 +27,12 @@ function acceptedAnswers(subject: Subject, kind: QuestionKind): string {
 }
 
 /** One quiz question. Give it a new `key` per question so its state resets. */
-export function QuizCard({ subject, kind, synonyms, onDone }: Props) {
+export function QuizCard({ subject, kind, synonyms, onDone, info }: Props) {
   const theme = useTheme();
   const [input, setInput] = useState("");
   const [result, setResult] = useState<CheckResult | null>(null);
   const [hint, setHint] = useState<string | null>(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   const isReading = kind === "reading";
   const onChange = (text: string) => setInput(isReading ? toKana(text, { IMEMode: true }) : text);
@@ -92,6 +95,17 @@ export function QuizCard({ subject, kind, synonyms, onDone }: Props) {
         </View>
       )}
 
+      {info && result?.verdict === "incorrect" && (
+        <Pressable
+          onPress={() => setShowInfo((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: showInfo }}
+          style={({ pressed }) => [styles.button, { borderWidth: 1, borderColor: theme.border, opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Text style={{ color: theme.text, fontWeight: "700", fontSize: 16 }}>{showInfo ? "Hide item info" : "Item info"}</Text>
+        </Pressable>
+      )}
+
       <Pressable
         onPress={submit}
         accessibilityRole="button"
@@ -99,6 +113,8 @@ export function QuizCard({ subject, kind, synonyms, onDone }: Props) {
       >
         <Text style={{ color: theme.onPrimary, fontWeight: "700", fontSize: 16 }}>{result ? "Next" : "Check"}</Text>
       </Pressable>
+
+      {showInfo && info}
     </View>
   );
 }
