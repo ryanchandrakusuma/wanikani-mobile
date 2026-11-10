@@ -1,118 +1,167 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Redirect, router } from "expo-router";
+import { router } from "expo-router";
 import { useAuth } from "../../auth/AuthContext";
+import { Panel } from "../../components/Panel";
+import type { ForecastHour } from "../../db/queries";
+import { useSettings } from "../../settings/SettingsContext";
 import { useSync } from "../../sync/SyncContext";
-import { radius, spacing, useTheme } from "../../theme";
-import { formatRelative } from "../../utils/time";
+import { syncLabel } from "../../sync/syncLabel";
+import { itemColors, radius, spacing, useTheme } from "../../theme";
+import { useTodo } from "../../todo/useTodo";
+import { formatCount } from "../../utils/format";
+import { formatClock, formatIn } from "../../utils/time";
 
-const formatCount = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-// Step 2: account info + sync status + what's stored locally.
-// The real lesson/review to-do list replaces the "stored" panel in Step 3.
+// Step 3: the to-do list. Everything here is read from the local database.
 export default function Home() {
   const theme = useTheme();
-  const { status, user, signOut, refreshUser } = useAuth();
-  const { phase, progress, lastSyncedAt, error, counts, sync, pendingOutboxCount } = useSync();
+  const { user, refreshUser } = useAuth();
+  const { phase, progress, lastSyncedAt, error, sync } = useSync();
+  const { dailyLessonLimit } = useSettings();
+  const { todo, refresh } = useTodo();
   const [refreshing, setRefreshing] = useState(false);
-
-  if (status === "signedOut") return <Redirect href="/login" />;
 
   const onRefresh = async () => {
     setRefreshing(true);
     try { await refreshUser(); } catch { /* offline: keep showing cached info */ }
     await sync();
+    await refresh().catch(() => {});
     setRefreshing(false);
   };
 
-  const doSignOut = async () => {
-    await signOut();
-    router.replace("/login");
-  };
+  const lessons = todo?.lessonsAvailable ?? 0;
+  const reviews = todo?.reviewsAvailable ?? 0;
+  const doneToday = todo?.lessonsStartedToday ?? 0;
+  const nextReview = todo?.nextReviewAt ? new Date(todo.nextReviewAt) : null;
 
-  const onSignOut = async () => {
-    const pending = await pendingOutboxCount();
-    if (pending === 0) return doSignOut();
-    Alert.alert(
-      "Unsent results",
-      `${pending} result${pending === 1 ? " hasn't" : "s haven't"} been sent to WaniKani yet. ` +
-        "They stay on this device and are sent when you sign in again with the same account.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Disconnect anyway", style: "destructive", onPress: () => void doSignOut() },
-      ],
-    );
-  };
+  const lessonNote =
+    lessons === 0 ? "No lessons waiting"
+    : doneToday >= dailyLessonLimit ? `Daily limit reached (${dailyLessonLimit})`
+    : `${doneToday} of ${dailyLessonLimit} done today`;
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]} edges={["top", "left", "right"]}>
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text style={[styles.greeting, { color: theme.textMuted }]}>おかえり</Text>
-        <Text style={[styles.name, { color: theme.text }]}>{user?.username ?? "Loading…"}</Text>
-
-        <View style={[styles.panel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Row label="Level" value={user ? String(user.level) : "–"} />
-          <Row label="Subscription" value={user ? user.subscription.type : "–"} />
-          <Row label="Levels unlocked" value={user ? `up to ${user.subscription.max_level_granted}` : "–"} />
-          {user?.current_vacation_started_at && <Row label="Vacation mode" value="On" />}
+        <View style={styles.header}>
+          <View style={{ flexShrink: 1 }}>
+            <Text style={[styles.greeting, { color: theme.textMuted }]}>おかえり</Text>
+            <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>{user?.username ?? "…"}</Text>
+          </View>
+          {user && (
+            <Text style={[styles.level, { color: theme.textMuted }]}>{`Level ${user.level}`}</Text>
+          )}
         </View>
 
-        <View style={styles.syncRow} accessibilityLiveRegion="polite">
-          {phase === "syncing" && <ActivityIndicator size="small" color={theme.primary} />}
-          <Text
-            style={[styles.note, { color: phase === "error" ? theme.danger : theme.textMuted }]}
-            testID="sync-status"
-          >
-            {syncLabel(phase, progress, lastSyncedAt, error)}
-          </Text>
-        </View>
-
-        {counts && (
-          <View style={[styles.panel, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-            <Text style={[styles.panelTitle, { color: theme.text }]}>Local summary</Text>
-            <Row label="Items" value={formatCount(counts.subjects)} />
-            <Row label="Your progress" value={formatCount(counts.assignments)} />
-            <Row label="Review stats" value={formatCount(counts.review_statistics)} />
-            <Row label="Your notes" value={formatCount(counts.study_materials)} />
-            <Row label="Levels" value={formatCount(counts.level_progressions)} />
-            <Row label="Spaced repetition systems" value={formatCount(counts.srs_systems)} />
+        {user?.current_vacation_started_at && (
+          <View style={[styles.banner, { borderColor: theme.border, backgroundColor: theme.surface }]}>
+            <Text style={{ color: theme.text, fontSize: 14 }}>
+              Vacation mode is on. Reviews are paused until you turn it off on WaniKani.
+            </Text>
           </View>
         )}
 
-        <Pressable onPress={onSignOut} style={styles.signOut} accessibilityRole="button">
-          <Text style={{ color: theme.danger, fontWeight: "600", fontSize: 15 }}>Disconnect account</Text>
-        </Pressable>
+        <View style={styles.cards}>
+          <TodoCard
+            title="Lessons"
+            count={lessons}
+            note={lessonNote}
+            color={itemColors.radical}
+            action="Start lessons"
+            onPress={() => router.push("/lessons")}
+            testID="lessons-card"
+          />
+          <TodoCard
+            title="Reviews"
+            count={reviews}
+            note={reviews === 0 ? "All caught up" : "Ready now"}
+            color={itemColors.kanji}
+            action="Start reviews"
+            onPress={() => router.push("/reviews")}
+            testID="reviews-card"
+          />
+        </View>
+
+        <Text style={[styles.next, { color: theme.text }]} testID="next-review">
+          {nextReview
+            ? `Next reviews ${formatIn(nextReview)} · ${formatClock(nextReview)}`
+            : todo ? "No reviews scheduled" : ""}
+        </Text>
+
+        <Panel title="Next 24 hours">
+          {todo && todo.forecast.length > 0
+            ? <Forecast hours={todo.forecast} />
+            : <Text style={{ color: theme.textMuted, fontSize: 14 }}>No reviews in the next 24 hours.</Text>}
+        </Panel>
+
+        <Text
+          style={[styles.sync, { color: phase === "error" ? theme.danger : theme.textMuted }]}
+          testID="sync-status"
+          accessibilityLiveRegion="polite"
+        >
+          {syncLabel(phase, progress, lastSyncedAt, error)}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function syncLabel(
-  phase: ReturnType<typeof useSync>["phase"],
-  progress: ReturnType<typeof useSync>["progress"],
-  lastSyncedAt: string | null,
-  error: string | null,
-): string {
-  if (phase === "syncing") {
-    if (!progress) return "Syncing…";
-    return progress.total > 0
-      ? `Syncing ${progress.label}… ${formatCount(progress.fetched)} / ${formatCount(progress.total)}`
-      : `Syncing ${progress.label}…`;
-  }
-  if (phase === "error") return error ?? "Sync failed.";
-  return lastSyncedAt ? `Synced ${formatRelative(lastSyncedAt)}` : "Not synced yet";
+function TodoCard({ title, count, note, color, action, onPress, testID }: {
+  title: string; count: number; note: string; color: string; action: string;
+  onPress: () => void; testID: string;
+}) {
+  const theme = useTheme();
+  const disabled = count === 0;
+  return (
+    <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]} testID={testID}>
+      <Text style={[styles.cardTitle, { color: theme.textMuted }]}>{title}</Text>
+      <Text style={[styles.cardCount, { color: theme.text }]}>{formatCount(count)}</Text>
+      <Text style={[styles.cardNote, { color: theme.textMuted }]}>{note}</Text>
+      <Pressable
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={action}
+        accessibilityState={{ disabled }}
+        style={({ pressed }) => [
+          styles.cardButton,
+          { backgroundColor: color, opacity: disabled ? 0.35 : pressed ? 0.8 : 1 },
+        ]}
+      >
+        <Text style={styles.cardButtonText}>Start</Text>
+      </Pressable>
+    </View>
+  );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Forecast({ hours }: { hours: ForecastHour[] }) {
   const theme = useTheme();
+  const max = Math.max(...hours.map((h) => h.count));
   return (
-    <View style={styles.row}>
-      <Text style={{ color: theme.textMuted, fontSize: 15 }}>{label}</Text>
-      <Text style={{ color: theme.text, fontSize: 15, fontWeight: "600" }}>{value}</Text>
+    <View style={{ gap: spacing.sm }}>
+      {hours.map((h) => (
+        <View
+          key={h.hourStart.getTime()}
+          style={styles.forecastRow}
+          accessible
+          accessibilityLabel={`${formatClock(h.hourStart)}: ${h.count} new, ${h.cumulative} total`}
+        >
+          <Text style={[styles.forecastTime, { color: theme.textMuted }]}>{formatClock(h.hourStart)}</Text>
+          <View style={styles.forecastTrack}>
+            <View
+              style={[
+                styles.forecastBar,
+                { width: `${Math.max(4, (h.count / max) * 100)}%`, backgroundColor: itemColors.kanji },
+              ]}
+            />
+          </View>
+          <Text style={[styles.forecastCount, { color: theme.text }]}>{`+${h.count}`}</Text>
+          <Text style={[styles.forecastTotal, { color: theme.textMuted }]}>{h.cumulative}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -120,12 +169,24 @@ function Row({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: spacing.lg, gap: spacing.md, width: "100%", maxWidth: 640, alignSelf: "center" },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: spacing.md },
   greeting: { fontSize: 16 },
-  name: { fontSize: 30, fontWeight: "700", marginTop: -spacing.sm },
-  panel: { borderWidth: 1, borderRadius: radius.md, padding: spacing.md, gap: spacing.md },
-  panelTitle: { fontSize: 15, fontWeight: "700" },
-  row: { flexDirection: "row", justifyContent: "space-between" },
-  syncRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  note: { fontSize: 14, flexShrink: 1 },
-  signOut: { paddingVertical: spacing.md, alignSelf: "flex-start" },
+  name: { fontSize: 30, fontWeight: "700" },
+  level: { fontSize: 15, fontWeight: "600", paddingBottom: 6 },
+  banner: { borderWidth: 1, borderRadius: radius.md, padding: spacing.md },
+  cards: { flexDirection: "row", gap: spacing.md },
+  card: { flex: 1, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
+  cardTitle: { fontSize: 15, fontWeight: "600" },
+  cardCount: { fontSize: 40, fontWeight: "700" },
+  cardNote: { fontSize: 13, minHeight: 34 },
+  cardButton: { marginTop: spacing.sm, borderRadius: radius.sm, paddingVertical: 12, alignItems: "center", minHeight: 44 },
+  cardButtonText: { color: "#FFFFFF", fontWeight: "700", fontSize: 15 },
+  next: { fontSize: 15, fontWeight: "600" },
+  forecastRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  forecastTime: { width: 44, fontSize: 13, fontVariant: ["tabular-nums"] },
+  forecastTrack: { flex: 1, height: 10 },
+  forecastBar: { height: 10, borderRadius: 5 },
+  forecastCount: { width: 40, textAlign: "right", fontSize: 13, fontWeight: "600", fontVariant: ["tabular-nums"] },
+  forecastTotal: { width: 40, textAlign: "right", fontSize: 13, fontVariant: ["tabular-nums"] },
+  sync: { fontSize: 13, textAlign: "center", marginTop: spacing.sm },
 });
