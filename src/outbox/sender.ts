@@ -1,4 +1,5 @@
-import { getAssignment, startAssignment, WKApiError } from "../api/client";
+import { createReview, getAssignment, startAssignment, WKApiError, type ReviewPayload } from "../api/client";
+import type { WKAssignment, WKCollectionItem, WKReviewStatistic } from "../api/types";
 import { upsert } from "../db/repository";
 import type { Db } from "../db/types";
 
@@ -24,10 +25,10 @@ async function countPending(db: Db) {
 /**
  * Sends queued results to WaniKani, oldest first.
  * - success → remove from the outbox and store the server's updated assignment
+ *   (and, for reviews, the updated review statistics)
  * - refused (4xx) → remove, and take the server's version of that assignment
  * - offline / server trouble → stop; everything stays queued for the next sync
  * - token rejected (401) → thrown, so the caller can sign out
- * Reviews are sent from Step 5 on; they stay queued until then.
  */
 export async function flushOutbox(db: Db, token: string): Promise<FlushResult> {
   const rows = await db.getAllAsync<OutboxRow>("SELECT id, kind, payload FROM outbox ORDER BY id", []);
@@ -35,16 +36,14 @@ export async function flushOutbox(db: Db, token: string): Promise<FlushResult> {
   let dropped = 0;
 
   for (const row of rows) {
-    if (row.kind !== "start_assignment") continue;
-    const { assignment_id: assignmentId, started_at: startedAt } = JSON.parse(row.payload) as {
-      assignment_id: number; started_at: string;
-    };
+    const assignmentId = (JSON.parse(row.payload) as { assignment_id: number }).assignment_id;
 
     try {
-      const updated = await startAssignment(token, assignmentId, startedAt);
+      const { assignment, reviewStatistic } = await send(token, row);
       await db.withTransactionAsync(async () => {
         await db.runAsync("DELETE FROM outbox WHERE id = ?", [row.id]);
-        await upsert.assignments(db, [updated]);
+        await upsert.assignments(db, [assignment]);
+        if (reviewStatistic) await upsert.review_statistics(db, [reviewStatistic]);
       });
       sent++;
     } catch (e) {
@@ -67,6 +66,21 @@ export async function flushOutbox(db: Db, token: string): Promise<FlushResult> {
   }
 
   return { sent, dropped, pending: await countPending(db) };
+}
+
+/** Sends one outbox row; returns the records WaniKani updated. */
+async function send(token: string, row: OutboxRow): Promise<{
+  assignment: WKCollectionItem<WKAssignment>;
+  reviewStatistic?: WKCollectionItem<WKReviewStatistic>;
+}> {
+  if (row.kind === "start_assignment") {
+    const { assignment_id: id, started_at: startedAt } = JSON.parse(row.payload) as {
+      assignment_id: number; started_at: string;
+    };
+    return { assignment: await startAssignment(token, id, startedAt) };
+  }
+  const updated = (await createReview(token, JSON.parse(row.payload) as ReviewPayload)).resources_updated;
+  return { assignment: updated.assignment, reviewStatistic: updated.review_statistic };
 }
 
 /**
