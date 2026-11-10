@@ -33,12 +33,13 @@ src/pages/        the screen code (HomePage, LessonsPage, SettingsPage, ...)
 src/contexts/     React providers: Auth, Sync, Settings (daily lesson limit, default 15)
 src/api/          WaniKani API client and types
 src/auth/         token storage (secure store)
-src/components/   shared UI (Panel, Row, SubjectGlyph, Mnemonic, AudioButton, ComingSoon)
-src/db/           SQLite schema (versioned migrations), queries, lessons, settings
+src/components/   shared UI (Panel, Row, SubjectGlyph, Mnemonic, AudioButton, SessionParts, ComingSoon)
+src/db/           SQLite schema (versioned migrations), queries, lessons, reviews, settings
 src/lessons/      lesson tabs per item type, batches of 5, lesson view
-src/outbox/       sends finished lessons to WaniKani (queued offline)
+src/outbox/       sends finished lessons and reviews to WaniKani (queued offline)
 src/quiz/         answer checking (typos, synonyms, kana) and quiz queue
-src/subjects/     typed subject model and mnemonic markup
+src/reviews/      review session (10 items in play, wrap up), stage maths, item info
+src/subjects/     typed subject model, mnemonic markup, offline radical images
 src/sync/         downloads WaniKani data into SQLite (incremental via updated_after)
 src/todo/         lesson/review to-do list hook
 src/theme/        colors and spacing
