@@ -15,6 +15,8 @@ const light = {
   text: "#1C1E26",
   textMuted: "#5F6475",
   danger: "#C62828",
+  success: "#2E7D32",
+  highlight: "#ECEEF4",
   primary: itemColors.kanji,
   onPrimary: "#FFFFFF",
 };
@@ -26,9 +28,16 @@ const dark: typeof light = {
   text: "#ECEEF4",
   textMuted: "#A1A6B8",
   danger: "#EF5350",
+  success: "#66BB6A",
+  highlight: "#2E3140",
   primary: itemColors.kanji,
   onPrimary: "#FFFFFF",
 };
+
+/** Background colour for an item type (kana-only vocabulary uses the vocabulary colour). */
+export function subjectColor(object: "radical" | "kanji" | "vocabulary" | "kana_vocabulary"): string {
+  return object === "kana_vocabulary" ? itemColors.vocabulary : itemColors[object];
+}
 
 export type Theme = typeof light;
 
