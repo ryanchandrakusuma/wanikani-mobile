@@ -113,6 +113,13 @@ export const MIGRATIONS: string[] = [
     value  TEXT NOT NULL
   );
   `,
+
+  // v3 — Step 4: link outbox rows to their assignment, so a sync never
+  // overwrites an item whose local result hasn't been sent yet.
+  `
+  ALTER TABLE outbox ADD COLUMN assignment_id INTEGER;
+  CREATE INDEX outbox_assignment ON outbox(assignment_id);
+  `,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
