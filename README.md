@@ -26,16 +26,18 @@ npm run lint       # ESLint
 ## Layout
 
 ```
-src/app/          screens (Expo Router: every file is a route; keep tests out of here)
+src/app/          routes only (Expo Router: every file is a route). Layouts live here;
+                  each screen file is a one-line re-export of a page from src/pages/
 src/app/(tabs)/   bottom tabs: Home, Dashboard, Settings
+src/pages/        the screen code (HomePage, LessonsPage, SettingsPage, ...)
+src/contexts/     React providers: Auth, Sync, Settings (daily lesson limit, default 15)
 src/api/          WaniKani API client and types
-src/auth/         token storage and auth state
-src/components/   shared UI (Panel, Row, ComingSoon)
+src/auth/         token storage (secure store)
+src/components/   shared UI (Panel, Row, SubjectGlyph, Mnemonic, AudioButton, ComingSoon)
 src/db/           SQLite schema (versioned migrations), queries, lessons, settings
-src/lessons/      lesson pages, batches of 5, lesson view
+src/lessons/      lesson tabs per item type, batches of 5, lesson view
 src/outbox/       sends finished lessons to WaniKani (queued offline)
 src/quiz/         answer checking (typos, synonyms, kana) and quiz queue
-src/settings/     device preferences (daily lesson limit, default 15)
 src/subjects/     typed subject model and mnemonic markup
 src/sync/         downloads WaniKani data into SQLite (incremental via updated_after)
 src/todo/         lesson/review to-do list hook
