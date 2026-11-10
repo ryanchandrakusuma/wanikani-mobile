@@ -29,18 +29,22 @@ npm run lint       # ESLint
 src/app/      screens (Expo Router: every file is a route; keep tests out of here)
 src/api/      WaniKani API client and types
 src/auth/     token storage and auth state
+src/db/       SQLite schema (versioned migrations) and queries
+src/sync/     downloads WaniKani data into SQLite (incremental via updated_after)
 src/theme/    colors and spacing
-__tests__/    unit tests, mirroring src/
+src/utils/    small helpers
+__tests__/    unit tests, mirroring src/ (db/sync tests use a real in-memory SQLite)
 ```
 
 ## Plan
 
 1. ✅ Setup and auth (token login, API client with rate-limit retry)
-2. Local database (SQLite) and sync
-3. Home screen: lesson/review counts, sync status, navigation
+2. ✅ Local database (SQLite) and sync
+3. Home screen: lesson/review counts, forecast, navigation
 4. Lesson window
 5. Review window
 6. Offline outbox sync and conflict handling
 7. Local notifications
 8. Dashboard: item spread, review forecast, daily history
-9. iPad build via EAS
+9. Backup export/import (activity log + outbox, merges phone and iPad)
+10. iPad build via EAS
