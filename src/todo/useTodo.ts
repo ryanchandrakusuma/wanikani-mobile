@@ -16,22 +16,30 @@ export const TODO_REFRESH_MS = 60_000;
  * The lesson/review to-do list, read from the local database (works offline).
  * Re-reads after every sync, every minute, and when the app comes back.
  */
+async function loadTodo(): Promise<Todo> {
+  const db = await getDatabase();
+  const now = new Date();
+  const counts = await getTodoCounts(db, now, startOfLocalDay(now));
+  const forecast = await getForecast(db, now, counts.reviewsAvailable);
+  return { ...counts, forecast };
+}
+
 export function useTodo(): { todo: Todo | null; refresh: () => Promise<void> } {
   const { phase, lastSyncedAt } = useSync();
   const [todo, setTodo] = useState<Todo | null>(null);
 
   const refresh = useCallback(async () => {
-    const db = await getDatabase();
-    const now = new Date();
-    const counts = await getTodoCounts(db, now, startOfLocalDay(now));
-    const forecast = await getForecast(db, now, counts.reviewsAvailable);
-    setTodo({ ...counts, forecast });
+    setTodo(await loadTodo());
   }, []);
 
   // Initial read, then again whenever a sync starts/finishes.
   useEffect(() => {
-    refresh().catch(() => {});
-  }, [refresh, phase, lastSyncedAt]);
+    let cancelled = false;
+    loadTodo()
+      .then((t) => { if (!cancelled) setTodo(t); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [phase, lastSyncedAt]);
 
   useEffect(() => {
     const id = setInterval(() => { refresh().catch(() => {}); }, TODO_REFRESH_MS);
