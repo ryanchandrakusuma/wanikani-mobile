@@ -2,10 +2,10 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, router } from "expo-router";
-import { useAuth } from "../auth/AuthContext";
-import { useSync } from "../sync/SyncContext";
-import { radius, spacing, useTheme } from "../theme";
-import { formatRelative } from "../utils/time";
+import { useAuth } from "../../auth/AuthContext";
+import { useSync } from "../../sync/SyncContext";
+import { radius, spacing, useTheme } from "../../theme";
+import { formatRelative } from "../../utils/time";
 
 const formatCount = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 

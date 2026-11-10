@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-import Home from "../../src/app/home";
+import Home from "../../src/app/(tabs)/home";
 import { useAuth } from "../../src/auth/AuthContext";
 import { useSync } from "../../src/sync/SyncContext";
 
