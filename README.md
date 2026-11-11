@@ -26,10 +26,9 @@ npm run lint       # ESLint
 ## Layout
 
 ```
-src/app/          routes only (Expo Router: every file is a route). Layouts live here;
-                  each screen file is a one-line re-export of a page from src/pages/
+src/app/          screens (Expo Router: every file is a route): login, lessons, reviews;
+                  _layout.tsx files set up providers and navigation
 src/app/(tabs)/   bottom tabs: Home, Dashboard, Settings
-src/pages/        the screen code (HomePage, LessonsPage, SettingsPage, ...)
 src/contexts/     React providers: Auth, Sync, Settings (daily lesson limit, default 15)
 src/api/          WaniKani API client and types
 src/auth/         token storage (secure store)
