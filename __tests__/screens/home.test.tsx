@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react-native";
 import { router } from "expo-router";
-import Home from "../../src/pages/HomePage";
+import Home from "../../src/app/(tabs)/home";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useSettings } from "../../src/contexts/SettingsContext";
 import { useSync } from "../../src/contexts/SyncContext";
