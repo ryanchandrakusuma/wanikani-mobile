@@ -1,7 +1,7 @@
 import { Linking } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-import Login from "../../src/pages/LoginPage";
+import Login from "../../src/app/login";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { WKApiError } from "../../src/api/client";
 
