@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-import Settings from "../../src/pages/SettingsPage";
+import Settings from "../../src/app/(tabs)/settings";
 import { useAuth } from "../../src/contexts/AuthContext";
 import { useSettings } from "../../src/contexts/SettingsContext";
 import { useSync } from "../../src/contexts/SyncContext";
