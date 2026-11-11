@@ -1,7 +1,7 @@
 import { Alert } from "react-native";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { router } from "expo-router";
-import Reviews from "../../src/pages/ReviewsPage";
+import Reviews from "../../src/app/reviews";
 import { getDatabase } from "../../src/db/database";
 import { upsert } from "../../src/db/repository";
 import { useSync } from "../../src/contexts/SyncContext";
