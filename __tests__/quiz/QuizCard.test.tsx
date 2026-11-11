@@ -125,11 +125,19 @@ describe("item info", () => {
     expect(screen.queryByText("Mnemonic about a big person")).toBeNull();
   });
 
-  it("is not offered before answering or after a correct answer", async () => {
+  it("is offered after a correct answer too, but not before answering", async () => {
     await render(<QuizCard subject={big} kind="meaning" synonyms={[]} onDone={jest.fn()} info={info} />);
     expect(screen.queryByRole("button", { name: "Item info" })).toBeNull();
 
     await fireEvent.changeText(meaningInput(), "big");
+    await check();
+    await fireEvent.press(screen.getByRole("button", { name: "Item info" }));
+    expect(screen.getByText("Mnemonic about a big person")).toBeTruthy();
+  });
+
+  it("is not offered without info (lesson quiz)", async () => {
+    await render(<QuizCard subject={big} kind="meaning" synonyms={[]} onDone={jest.fn()} />);
+    await fireEvent.changeText(meaningInput(), "small");
     await check();
     expect(screen.queryByRole("button", { name: "Item info" })).toBeNull();
   });
