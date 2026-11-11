@@ -13,7 +13,7 @@ interface Props {
   synonyms: string[];
   /** Called after the user has seen the result and pressed Next. */
   onDone: (verdict: "correct" | "incorrect") => void;
-  /** Optional details (meanings, readings, mnemonics) behind an "Item info" button after a wrong answer. */
+  /** Optional details (meanings, readings, mnemonics) behind an "Item info" button once the answer is checked. */
   info?: ReactNode;
 }
 
@@ -95,7 +95,7 @@ export function QuizCard({ subject, kind, synonyms, onDone, info }: Props) {
         </View>
       )}
 
-      {info && result?.verdict === "incorrect" && (
+      {info && result && (
         <Pressable
           onPress={() => setShowInfo((v) => !v)}
           accessibilityRole="button"

@@ -5,7 +5,7 @@ import { lessonPages } from "../lessons/lessonTabs";
 import { primaryMeaning, SUBJECT_LABEL } from "../subjects/model";
 import { spacing, subjectColor, useTheme } from "../theme";
 
-/** Meanings, readings and mnemonics of an item, shown after a wrong review answer. */
+/** Meanings, readings and mnemonics of an item, shown after a review answer is checked. */
 export function ItemInfo({ item }: { item: LessonItem }) {
   const theme = useTheme();
   const { subject } = item;
